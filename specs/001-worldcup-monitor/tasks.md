@@ -25,15 +25,15 @@
 
 **Purpose**: Initialize project structure and basic configuration
 
-- [ ] T001 Create backend directory structure (src/, tests/, prompts/, data/)
-- [ ] T002 Create frontend directory structure (src/, public/)
-- [ ] T003 [P] Initialize Python project with requirements.txt (FastAPI, SQLAlchemy, APScheduler, aliyun-python-sdk, beautifulsoup4, sentence-transformers, pytest)
-- [ ] T004 [P] Initialize React project with package.json (React, TailwindCSS, axios, react-router-dom)
-- [ ] T005 [P] Create backend/.env.example with environment variable templates
-- [ ] T006 [P] Create backend/config.yaml with default configuration values
-- [ ] T006a [P] Populate backend/config.yaml with 30-50 World Cup keywords (2026世界杯, 美加墨世界杯, 世界杯预选赛, 国际足联, 世界杯扩军, 世界杯分组, etc.)
-- [ ] T007 [P] Create backend/README.md with project overview
-- [ ] T008 [P] Create frontend/README.md with setup instructions
+- [X] T001 Create backend directory structure (src/, tests/, prompts/, data/)
+- [X] T002 Create frontend directory structure (src/, public/)
+- [X] T003 [P] Initialize Python project with requirements.txt (FastAPI, SQLAlchemy, APScheduler, aliyun-python-sdk, beautifulsoup4, sentence-transformers, pytest)
+- [X] T004 [P] Initialize React project with package.json (React, TailwindCSS, axios, react-router-dom)
+- [X] T005 [P] Create backend/.env.example with environment variable templates
+- [X] T006 [P] Create backend/config.yaml with default configuration values
+- [X] T006a [P] Populate backend/config.yaml with 30-50 World Cup keywords (2026世界杯, 美加墨世界杯, 世界杯预选赛, 国际足联, 世界杯扩军, 世界杯分组, etc.)
+- [X] T007 [P] Create backend/README.md with project overview
+- [X] T008 [P] Create frontend/README.md with setup instructions
 
 ---
 
@@ -45,26 +45,26 @@
 
 ### Constitution-Driven Infrastructure
 
-- [ ] T009 [P] Create backend/src/core/config.py to load config.yaml and environment variables
-- [ ] T010 [P] Create backend/src/core/logging.py with structured logging (ISO 8601 timestamps, JSON context)
-- [ ] T011 [P] Create backend/src/core/database.py with SQLAlchemy engine and session management (WAL mode enabled)
-- [ ] T012 [P] Create backend/src/utils/text.py with truncate_input() function (1500 char limit)
-- [ ] T013 [P] Create backend/src/utils/hash.py with content fingerprinting (SHA256)
-- [ ] T014 [P] Create backend/src/utils/mock.py with dry-run mock data generator
-- [ ] T015 Create backend/src/scrapers/base.py with unified_request() function (delays, UA rotation, headers)
-- [ ] T016 Create backend/src/ai/client.py with Aliyun Qwen API client wrapper (try-except parsing, exponential backoff)
-- [ ] T017 Create backend/src/core/scheduler.py with APScheduler setup (BackgroundScheduler, SQLite job store)
-- [ ] T018 [P] Create all 5 prompt templates in backend/prompts/ (relevance_filter.txt, topic_clustering.txt, card_generation.txt, detail_generation.txt, credibility_scoring.txt)
+- [X] T009 [P] Create backend/src/core/config.py to load config.yaml and environment variables
+- [X] T010 [P] Create backend/src/core/logging.py with structured logging (ISO 8601 timestamps, JSON context)
+- [X] T011 [P] Create backend/src/core/database.py with SQLAlchemy engine and session management (WAL mode enabled)
+- [X] T012 [P] Create backend/src/utils/text.py with truncate_input() function (1500 char limit)
+- [X] T013 [P] Create backend/src/utils/hash.py with content fingerprinting (SHA256)
+- [X] T014 [P] Create backend/src/utils/mock.py with dry-run mock data generator
+- [X] T015 Create backend/src/scrapers/base.py with unified_request() function (delays, UA rotation, headers)
+- [X] T016 Create backend/src/ai/client.py with Aliyun Qwen API client wrapper (try-except parsing, exponential backoff)
+- [X] T017 Create backend/src/core/scheduler.py with APScheduler setup (BackgroundScheduler, SQLite job store)
+- [X] T018 [P] Create all 5 prompt templates in backend/prompts/ (relevance_filter.txt, topic_clustering.txt, card_generation.txt, detail_generation.txt, credibility_scoring.txt)
 
 ### Database Models (All Entities)
 
-- [ ] T019 [P] Create backend/src/models/source_content.py with SourceContent model
-- [ ] T020 [P] Create backend/src/models/topic_cluster.py with TopicCluster model
-- [ ] T021 [P] Create backend/src/models/hot_card.py with HotCard model
-- [ ] T022 [P] Create backend/src/models/detail_page.py with DetailPage model
-- [ ] T023 [P] Create backend/src/models/health_status.py with SourceHealth model
-- [ ] T024 [P] Create backend/src/models/api_call_log.py with APICallLog model
-- [ ] T025 Create backend/src/core/database.py init_db() function to create all tables and indexes
+- [X] T019 [P] Create backend/src/models/source_content.py with SourceContent model
+- [X] T020 [P] Create backend/src/models/topic_cluster.py with TopicCluster model
+- [X] T021 [P] Create backend/src/models/hot_card.py with HotCard model
+- [X] T022 [P] Create backend/src/models/detail_page.py with DetailPage model
+- [X] T023 [P] Create backend/src/models/health_status.py with SourceHealth model
+- [X] T024 [P] Create backend/src/models/api_call_log.py with APICallLog model
+- [X] T025 Create backend/src/core/database.py init_db() function to create all tables and indexes
 
 **Checkpoint**: Foundation ready - spec implementation can now begin
 
@@ -78,26 +78,26 @@
 
 ### Backend - Scraping & Storage
 
-- [ ] T026 [Spec1] Implement backend/src/scrapers/hupu.py to scrape 虎扑 hot posts (top 20, single keyword "2026世界杯")
-- [ ] T027 [Spec1] Implement backend/src/services/pipeline.py with scrape_and_store() function (scrape → clean → fingerprint → store)
-- [ ] T028 [Spec1] Add text cleaning logic in backend/src/utils/text.py (remove HTML, ads, emojis, non-Chinese)
+- [X] T026 [Spec1] Implement backend/src/scrapers/hupu.py to scrape 虎扑 hot posts (top 20, single keyword "2026世界杯")
+- [X] T027 [Spec1] Implement backend/src/services/pipeline.py with scrape_and_store() function (scrape → clean → fingerprint → store)
+- [X] T028 [Spec1] Add text cleaning logic in backend/src/utils/text.py (remove HTML, ads, emojis, non-Chinese)
 
 ### Backend - API
 
-- [ ] T029 [P] [Spec1] Create backend/src/api/cards.py with GET /api/cards endpoint (return raw SourceContent as simple list)
-- [ ] T030 [P] [Spec1] Create backend/src/api/health.py with GET /api/health endpoint
-- [ ] T031 [Spec1] Create backend/src/main.py FastAPI application with CORS configuration
+- [X] T029 [P] [Spec1] Create backend/src/api/cards.py with GET /api/cards endpoint (return raw SourceContent as simple list)
+- [X] T030 [P] [Spec1] Create backend/src/api/health.py with GET /api/health endpoint
+- [X] T031 [Spec1] Create backend/src/main.py FastAPI application with CORS configuration
 
 ### Frontend - Basic Display
 
-- [ ] T032 [P] [Spec1] Create frontend/src/services/api.ts with API client (axios)
-- [ ] T033 [P] [Spec1] Create frontend/src/components/RawList.tsx to display raw content list
-- [ ] T034 [Spec1] Create frontend/src/pages/Discover.tsx with basic layout
-- [ ] T035 [Spec1] Create frontend/src/App.tsx with routing setup
+- [X] T032 [P] [Spec1] Create frontend/src/services/api.ts with API client (axios)
+- [X] T033 [P] [Spec1] Create frontend/src/components/RawList.tsx to display raw content list
+- [X] T034 [Spec1] Create frontend/src/pages/Discover.tsx with basic layout
+- [X] T035 [Spec1] Create frontend/src/App.tsx with routing setup
 
 ### Integration
 
-- [ ] T036 [Spec1] Configure APScheduler in backend/src/main.py to run scraping every 30 minutes
+- [X] T036 [Spec1] Configure APScheduler in backend/src/main.py to run scraping every 30 minutes
 - [ ] T037 [Spec1] Test end-to-end: Run scraper → verify data in SQLite → verify frontend displays list
 
 **Checkpoint**: Spec 1 complete - can see raw 虎扑 posts in browser

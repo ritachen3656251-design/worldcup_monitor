@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell.exe:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m 'docs: complete implementation plan for World Cup Hot Topics Monitor \\(001-worldcup-monitor\\):*)",
+      "Bash(git commit -m 'docs: generate task breakdown for World Cup Hot Topics Monitor \\(001-worldcup-monitor\\):*)",
+      "Bash([ -d \"C:/Users/lenovo/worldcup-monitor/specs/001-worldcup-monitor/checklists\" ])",
+      "Bash([ -f \".specify/extensions.yml\" ])"
+    ]
+  }
+}

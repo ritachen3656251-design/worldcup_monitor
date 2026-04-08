@@ -1,0 +1,95 @@
+scraping:
+  interval_minutes: 30
+  keywords:
+    # Core World Cup Terms
+    - "2026世界杯"
+    - "美加墨世界杯"
+    - "世界杯预选赛"
+    - "世界杯扩军"
+    - "世界杯分组"
+    - "世界杯赛程"
+    - "世界杯门票"
+    - "世界杯举办城市"
+    - "世界杯球场"
+    - "世界杯吉祥物"
+    # Teams and Qualifications
+    - "国足世界杯"
+    - "中国队世界杯"
+    - "世界杯晋级"
+    - "世界杯出线"
+    - "世界杯附加赛"
+    - "世界杯种子队"
+    - "世界杯夺冠热门"
+    - "世界杯卫冕冠军"
+    # Players and Transfers
+    - "世界杯球星"
+    - "梅西世界杯"
+    - "C罗世界杯"
+    - "姆巴佩世界杯"
+    - "哈兰德世界杯"
+    - "内马尔世界杯"
+    - "世界杯转会"
+    - "世界杯身价"
+    # Organization and Rules
+    - "国际足联"
+    - "FIFA世界杯"
+    - "世界杯改制"
+    - "世界杯名额分配"
+    - "世界杯抽签"
+    - "世界杯规则"
+    - "世界杯VAR"
+    # Fan Culture
+    - "世界杯球迷"
+    - "世界杯观赛"
+    - "世界杯直播"
+    - "世界杯解说"
+    - "世界杯竞猜"
+    - "世界杯周边"
+    # Historical and Comparative
+    - "世界杯历史"
+    - "世界杯纪录"
+    - "世界杯冠军"
+    - "世界杯金靴"
+    - "世界杯金球"
+    # Controversies and News
+    - "世界杯争议"
+    - "世界杯黑马"
+    - "世界杯爆冷"
+    - "世界杯伤病"
+    - "世界杯禁赛"
+  delays:
+    hupu: 5
+    dongqiudi: 3
+    bilibili: 2
+
+ai:
+  provider: "aliyun"
+  api_key: "${ALIYUN_API_KEY}"
+  daily_limit: 10000
+  input_max_chars: 1500
+  models:
+    relevance: "qwen-turbo"
+    clustering: "qwen-turbo"
+    generation: "qwen-max"
+    credibility: "qwen-max"
+
+clustering:
+  embedding_similarity_threshold: 0.8
+  time_window_hours: 24
+
+content:
+  archive_after_hours: 72
+  retention_days: 30
+  hotness_threshold: 10
+
+monitoring:
+  probe_interval_minutes: 5
+  failure_alert_threshold: 3
+  degradation_threshold: 5
+  admin_email: "${ADMIN_EMAIL}"
+
+push:
+  polling_interval_seconds: 30
+
+dry_run:
+  enabled: false
