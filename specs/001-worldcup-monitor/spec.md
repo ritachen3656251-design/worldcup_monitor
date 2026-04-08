@@ -12,7 +12,7 @@
 - Q: User Authentication Model → A: Public website - no login required, anyone can browse hot topics
 - Q: Admin Alert Notification Method → A: Email notification to configured admin address
 - Q: Data Retention Policy for Archived Content → A: Keep archived content for 30 days, then delete
-- Q: LLM Provider for AI Processing → A: Local open-source model (e.g., Qwen, ChatGLM for Chinese)
+- Q: LLM Provider for AI Processing → A: Aliyun Qwen API (cloud-based, reliable Chinese language support)
 - Q: Deployment Environment → A: Single server deployment (VPS/dedicated server, all components on one machine)
 
 ## User Scenarios & Testing *(mandatory)*
@@ -186,7 +186,7 @@
 - 图片版权问题通过代理缓存原帖图片+使用无版权主题图库解决
 - AI生成内容的质量依赖于prompt工程和few-shot示例，需要持续优化
 - MVP为公开网站，无需用户注册或登录即可浏览所有热点内容
-- 使用本地部署的开源中文LLM（如Qwen、ChatGLM）进行AI处理，降低API成本并提升中文理解能力
+- 使用Aliyun Qwen API进行AI处理，提供可靠的中文理解能力和稳定的服务质量
 - 单服务器部署（VPS或独立服务器），所有组件（Web服务、爬虫、AI处理、数据库）运行在同一台机器上
 
 ## Constitution Alignment

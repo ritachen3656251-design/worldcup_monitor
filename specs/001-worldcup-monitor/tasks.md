@@ -31,6 +31,7 @@
 - [ ] T004 [P] Initialize React project with package.json (React, TailwindCSS, axios, react-router-dom)
 - [ ] T005 [P] Create backend/.env.example with environment variable templates
 - [ ] T006 [P] Create backend/config.yaml with default configuration values
+- [ ] T006a [P] Populate backend/config.yaml with 30-50 World Cup keywords (2026世界杯, 美加墨世界杯, 世界杯预选赛, 国际足联, 世界杯扩军, 世界杯分组, etc.)
 - [ ] T007 [P] Create backend/README.md with project overview
 - [ ] T008 [P] Create frontend/README.md with setup instructions
 
@@ -270,7 +271,7 @@
 - [ ] T100 [Spec6] Test channel filtering: Click "转会传闻" → Only transfer rumor cards displayed
 - [ ] T101 [Spec6] Test image strategy: Cards with images display properly, fallback to theme images or no-image layout
 - [ ] T102 [Spec6] Test responsive design: Verify mobile and desktop layouts
-- [ ] T103 [Spec6] Performance test: Verify 3s page load for 10+ cards, 1s detail page load
+- [ ] T103 [Spec6] Performance test: Verify 3s page load for 10+ cards (SC-001), 1s detail page load (SC-004)
 
 **Checkpoint**: Spec 6 complete - production-ready MVP with all features
 
@@ -289,6 +290,7 @@
 - [ ] T110 Run quickstart.md validation (setup from scratch, verify all steps work)
 - [ ] T111 Create demo data for screenshots and presentations
 - [ ] T112 Final code review against constitution checklist
+- [ ] T113 Implement scheduled cleanup job in backend/src/services/cleanup.py (archive content after 72h, delete after 30 days per FR-004)
 
 ---
 
