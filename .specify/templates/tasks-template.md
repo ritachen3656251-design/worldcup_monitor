@@ -69,6 +69,19 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] T008 Configure error handling and logging infrastructure
 - [ ] T009 Setup environment configuration management
 
+**Constitution-Driven Infrastructure** (add if applicable to feature):
+
+- [ ] T00X [P] Create unified request function with delays, UA rotation, browser headers (Principle VI)
+- [ ] T00X [P] Implement API call counter with daily hard limits (Principle III)
+- [ ] T00X [P] Setup prompt templates directory structure in prompts/ (Principle V)
+- [ ] T00X [P] Implement dry-run mode toggle and mock data system (Principle VII)
+- [ ] T00X [P] Setup configuration file for all tunable parameters (Principle IV)
+- [ ] T00X [P] Implement LLM output parsing wrapper with try-except and logging (Principle III)
+- [ ] T00X [P] Setup input truncation utility (1500 char limit) (Principle III)
+- [ ] T00X [P] Implement pipeline stage logging with input/output counts (Principle III)
+- [ ] T00X [P] Setup raw vs cleaned data storage separation (Principle VI)
+- [ ] T00X [P] Implement credibility classification system (Verified/Pending/Rumor) (Principle II)
+
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
 ---

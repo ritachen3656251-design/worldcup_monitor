@@ -126,3 +126,26 @@
 - [Assumption about scope boundaries, e.g., "Mobile support is out of scope for v1"]
 - [Assumption about data/environment, e.g., "Existing authentication system will be reused"]
 - [Dependency on existing system/service, e.g., "Requires access to the existing user profile API"]
+
+## Constitution Alignment
+
+<!--
+  ACTION REQUIRED: Verify this feature aligns with project constitution principles.
+  Reference: .specify/memory/constitution.md
+-->
+
+**Product Positioning**: [How does this feature maintain AI editorial curation vs raw aggregation?]
+
+**Data Honesty**: [How will source attribution and credibility classification be handled?]
+
+**Defensive Engineering**: [What LLM parsing, input validation, and API limits are needed?]
+
+**Configuration**: [What parameters need to be externalized to config files?]
+
+**Prompts**: [What prompt templates need to be created in prompts/ directory?]
+
+**Crawler Standards**: [If applicable, how will scraping follow unified request standards?]
+
+**Testability**: [How will dry-run mode be supported for this feature?]
+
+**MVP Mindset**: [What technology choices are made and why? Any complexity justified?]

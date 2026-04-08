@@ -31,7 +31,46 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+**Principle I - Product Positioning**: Does this feature maintain AI editorial curation (not raw content forwarding)?
+- [ ] Verified: Feature processes/curates content, doesn't just aggregate
+
+**Principle II - Data Honesty**: Does this feature require source attribution and credibility classification?
+- [ ] Verified: All factual claims traceable to sources
+- [ ] Verified: Credibility labels (Verified/Pending/Rumor) implemented where applicable
+
+**Principle III - Defensive Engineering**: Are protective measures in place?
+- [ ] Verified: All LLM parsing wrapped in try-except
+- [ ] Verified: Input truncation implemented (1500 char limit)
+- [ ] Verified: API call counter with hard limits implemented
+- [ ] Verified: Pipeline stage logging added
+
+**Principle IV - Configuration Externalization**: Are parameters externalized?
+- [ ] Verified: No hardcoded thresholds, intervals, or limits
+- [ ] Verified: All tunable values in config files
+
+**Principle V - Prompt-Code Separation**: Are prompts externalized?
+- [ ] Verified: All prompts in `prompts/` directory
+- [ ] Verified: No hardcoded prompts in code
+
+**Principle VI - Crawler Standards**: Does scraping follow standards?
+- [ ] Verified: Unified request function used
+- [ ] Verified: Platform-specific delays implemented
+- [ ] Verified: UA rotation and browser headers configured
+- [ ] Verified: Raw data preservation separate from cleaned data
+
+**Principle VII - Testability**: Is dry-run mode supported?
+- [ ] Verified: Dry-run toggle implemented
+- [ ] Verified: Mock data available for AI processing layers
+
+**Principle VIII - MVP Mindset**: Are technology choices justified?
+- [ ] Verified: SQLite used unless scale proven inadequate
+- [ ] Verified: APScheduler used unless complexity proven inadequate
+- [ ] Verified: Simple caching used unless performance proven inadequate
+- [ ] Verified: Any complexity upgrades documented with measurements
+
+**Principle IX - Git Discipline**: Is commit strategy clear?
+- [ ] Verified: Atomic commit plan defined
+- [ ] Verified: Commit message format established
 
 ## Project Structure
 
