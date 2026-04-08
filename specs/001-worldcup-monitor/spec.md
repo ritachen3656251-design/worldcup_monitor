@@ -5,6 +5,16 @@
 **Status**: Draft  
 **Input**: User description: "构建世界杯热点监控助手——专注于2026世界杯赛前热点的AI信息聚合产品"
 
+## Clarifications
+
+### Session 2026-04-08
+
+- Q: User Authentication Model → A: Public website - no login required, anyone can browse hot topics
+- Q: Admin Alert Notification Method → A: Email notification to configured admin address
+- Q: Data Retention Policy for Archived Content → A: Keep archived content for 30 days, then delete
+- Q: LLM Provider for AI Processing → A: Local open-source model (e.g., Qwen, ChatGLM for Chinese)
+- Q: Deployment Environment → A: Single server deployment (VPS/dedicated server, all components on one machine)
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - 浏览AI精选热点卡片流 (Priority: P1)
@@ -96,7 +106,7 @@
 - **FR-001**: 系统必须支持从多个中文足球社区（虎扑、懂球帝、B站）自动采集2026世界杯相关内容
 - **FR-002**: 系统必须使用固定关键词库（30-50个关键词）驱动内容采集，关键词包括"2026世界杯"、"美加墨世界杯"、"世界杯预选赛"等
 - **FR-003**: 系统必须对采集的内容进行去重处理，基于内容指纹（标题+正文前100字哈希）判断重复
-- **FR-004**: 系统必须自动过滤超过72小时且热度低的内容
+- **FR-004**: 系统必须自动过滤超过72小时且热度低的内容，归档后保留30天再删除
 - **FR-005**: 系统必须对采集的原始内容进行清洗，去除HTML标签、广告、表情包、非中文字符
 - **FR-006**: 系统必须使用AI对清洗后的内容进行相关性评分（1-10分），≥7分进入聚合池，4-6分低优先级，≤3分丢弃
 - **FR-007**: 系统必须对相关内容进行话题聚类，识别同一事件的不同报道
@@ -127,7 +137,7 @@
 **信源健康监控**
 
 - **FR-022**: 系统必须每5分钟探针检测主要信息源的健康状态
-- **FR-023**: 当信息源连续3次检测失败时，系统必须发送告警通知
+- **FR-023**: 当信息源连续3次检测失败时，系统必须发送告警通知（通过邮件发送到配置的管理员地址）
 - **FR-024**: 当信息源连续5次检测失败时，系统必须自动降级到备用信息源（Bing Search API）
 - **FR-025**: 使用备用信源生成的内容，可信度标签必须自动降为"待确认"
 
@@ -175,6 +185,9 @@
 - P1功能（动态关键词库、一级推送、详情页追问、用户个性化）在MVP验证后再开发
 - 图片版权问题通过代理缓存原帖图片+使用无版权主题图库解决
 - AI生成内容的质量依赖于prompt工程和few-shot示例，需要持续优化
+- MVP为公开网站，无需用户注册或登录即可浏览所有热点内容
+- 使用本地部署的开源中文LLM（如Qwen、ChatGLM）进行AI处理，降低API成本并提升中文理解能力
+- 单服务器部署（VPS或独立服务器），所有组件（Web服务、爬虫、AI处理、数据库）运行在同一台机器上
 
 ## Constitution Alignment
 
@@ -222,4 +235,6 @@
 - 任务调度用APScheduler（定时采集、探针检测）
 - 缓存用内存dict（卡片预生成缓存、详情页缓存）
 - 实时推送用轮询（30秒），稳定后再升级WebSocket
+- 本地部署开源中文LLM（Qwen或ChatGLM），避免API调用成本
+- 单服务器部署，所有组件运行在同一台VPS/独立服务器上
 - 不到瓶颈不换重依赖
