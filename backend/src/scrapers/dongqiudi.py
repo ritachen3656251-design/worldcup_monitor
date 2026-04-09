@@ -1,7 +1,8 @@
-"""懂球帝 scraper - Scrapes articles and posts from DongQiuDi."""
+"""懂球帝 scraper - Fetches articles from DongQiuDi app API."""
+import json
 from typing import List, Dict, Any
 from datetime import datetime
-import re
+from urllib.parse import quote
 
 from src.scrapers.base import unified_request
 from src.core.config import get_config
@@ -10,97 +11,62 @@ from src.utils.mock import generate_mock_source_content
 
 logger = get_logger(__name__)
 
+# DongQiuDi tab IDs with World Cup content
+WORLDCUP_TAB_ID = 114  # [世界杯] dedicated tab
+
 
 def scrape_dongqiudi(keyword: str = "2026世界杯", limit: int = 20) -> List[Dict[str, Any]]:
     """
-    Scrape hot posts from 懂球帝.
+    Scrape articles from 懂球帝 app API.
+
+    Uses the World Cup dedicated tab (tab 114) which returns
+    curated World Cup content. Falls back to recommended feed
+    (tab 1) with keyword filtering if the WC tab is empty.
 
     Args:
-        keyword: Search keyword
-        limit: Maximum number of posts to scrape
+        keyword: Search keyword (used for fallback filtering)
+        limit: Maximum number of articles to return
 
     Returns:
         List of scraped content dicts
     """
     config = get_config()
 
-    # Dry-run mode: return mock data filtered for dongqiudi
     if config.dry_run.enabled:
         logger.info("[DRY-RUN] Using mock data for 懂球帝")
         mock_data = generate_mock_source_content(limit)
         return [item for item in mock_data if item["platform"] == "dongqiudi"][:limit] or mock_data[:limit // 3]
 
+    logger.info("Scraping 懂球帝", keyword=keyword, limit=limit)
+
     results = []
 
     try:
-        # DongQiuDi search API
-        url = f"https://www.dongqiudi.com/search?keyword={keyword}"
-        logger.info("Scraping 懂球帝", url=url, keyword=keyword)
+        # Primary: World Cup dedicated tab
+        articles = _fetch_tab(WORLDCUP_TAB_ID)
 
-        response = unified_request(url, platform="dongqiudi")
+        if not articles:
+            # Fallback: recommended feed, filtered by keyword
+            logger.warning("World Cup tab empty, falling back to recommended feed")
+            all_articles = _fetch_tab(1)
+            keywords = keyword.split() + ["世界杯", "World Cup"]
+            articles = [
+                a for a in all_articles
+                if any(kw in a.get("title", "") for kw in keywords)
+            ]
 
-        if response is None or response.status_code != 200:
-            logger.warning("懂球帝 request failed", status_code=getattr(response, 'status_code', None))
-            return results
+        logger.info("懂球帝 raw articles fetched", count=len(articles))
 
-        # Parse HTML
-        from bs4 import BeautifulSoup
-        soup = BeautifulSoup(response.text, "lxml")
-
-        # Find article items (selectors need verification against actual HTML)
-        articles = soup.select("div.article-item, div.search-result-item, article")[:limit]
-
-        for article in articles:
+        for article in articles[:limit]:
             try:
-                # Extract title
-                title_el = article.select_one("h3, h2, a.title, .article-title")
-                if not title_el:
-                    continue
-                title = title_el.get_text(strip=True)
-
-                # Extract URL
-                link_el = article.select_one("a[href]")
-                article_url = link_el["href"] if link_el else ""
-                if article_url and not article_url.startswith("http"):
-                    article_url = f"https://www.dongqiudi.com{article_url}"
-
-                # Extract author
-                author_el = article.select_one(".author, .user-name, span.name")
-                author = author_el.get_text(strip=True) if author_el else None
-
-                # Extract time
-                time_el = article.select_one("time, .time, .date, span.published-at")
-                published_at = _parse_dqd_time(time_el.get_text(strip=True)) if time_el else datetime.now()
-
-                # Extract content/snippet
-                content_el = article.select_one("p, .summary, .content, .desc")
-                raw_html = str(article)
-                cleaned_text = content_el.get_text(strip=True) if content_el else title
-
-                # Extract interaction count
-                comment_el = article.select_one(".comment-count, .comments, .interaction")
-                interaction = 0
-                if comment_el:
-                    nums = re.findall(r'\d+', comment_el.get_text())
-                    interaction = int(nums[0]) if nums else 0
-
-                results.append({
-                    "platform": "dongqiudi",
-                    "url": article_url,
-                    "title": title,
-                    "raw_html": raw_html,
-                    "cleaned_text": cleaned_text,
-                    "author": author,
-                    "published_at": published_at,
-                    "interaction_count": interaction,
-                    "image_urls": [],
-                })
-
+                parsed = _parse_article(article)
+                if parsed:
+                    results.append(parsed)
             except Exception as e:
-                logger.error("Failed to parse 懂球帝 article", error=str(e))
+                logger.warning("Failed to parse 懂球帝 article", error=str(e))
                 continue
 
-        logger.info("懂球帝 scraping done", results_count=len(results))
+        logger.info("懂球帝 scraping completed", results_count=len(results))
 
     except Exception as e:
         logger.error("懂球帝 scraping failed", error=str(e), exc_info=True)
@@ -108,27 +74,86 @@ def scrape_dongqiudi(keyword: str = "2026世界杯", limit: int = 20) -> List[Di
     return results
 
 
-def _parse_dqd_time(time_str: str) -> datetime:
-    """Parse 懂球帝 time string to datetime."""
+def _fetch_tab(tab_id: int) -> List[dict]:
+    """Fetch articles from a DongQiuDi app API tab."""
+    url = f"https://api.dongqiudi.com/app/tabs/iphone/{tab_id}.json"
+
     try:
-        if "分钟前" in time_str:
-            from datetime import timedelta
-            minutes = int(re.findall(r'\d+', time_str)[0])
-            return datetime.now() - timedelta(minutes=minutes)
-        elif "小时前" in time_str:
-            from datetime import timedelta
-            hours = int(re.findall(r'\d+', time_str)[0])
-            return datetime.now() - timedelta(hours=hours)
-        elif "天前" in time_str:
-            from datetime import timedelta
-            days = int(re.findall(r'\d+', time_str)[0])
-            return datetime.now() - timedelta(days=days)
-        else:
-            for fmt in ["%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d", "%m-%d %H:%M"]:
-                try:
-                    return datetime.strptime(time_str, fmt)
-                except ValueError:
-                    continue
-            return datetime.now()
-    except Exception:
+        response = unified_request(url, platform="dongqiudi")
+        data = response.json()
+        return data.get("articles", [])
+    except Exception as e:
+        logger.error("Failed to fetch DongQiuDi tab", tab_id=tab_id, error=str(e))
+        return []
+
+
+def _parse_article(article: dict) -> dict | None:
+    """
+    Parse a single DongQiuDi article into our standard format.
+
+    Args:
+        article: Raw article dict from DongQiuDi API
+
+    Returns:
+        Standardized content dict, or None if essential fields missing
+    """
+    title = article.get("title", "")
+    if not title:
+        return None
+
+    article_id = article.get("id", "")
+    url = article.get("url", "")
+    if not url and article_id:
+        url = f"https://www.dongqiudi.com/article/{article_id}"
+
+    author = article.get("author_name", "懂球帝")
+
+    # Parse publish time
+    time_str = article.get("published_at", "")
+    published_at = _parse_time(time_str)
+
+    # Interaction count: comments
+    comments = article.get("comments_total", 0)
+    try:
+        interaction_count = int(comments)
+    except (ValueError, TypeError):
+        interaction_count = 0
+
+    # Description / content
+    description = article.get("description", "") or article.get("b_description", "")
+    # If no description, use title as content (DQD API often has empty descriptions)
+    cleaned_text = description if description else title
+
+    # Thumbnail image
+    image_urls = []
+    thumb = article.get("thumb", "")
+    if thumb and isinstance(thumb, str) and thumb.startswith("http"):
+        image_urls.append(thumb)
+
+    # Keep raw JSON for debugging
+    raw_html = json.dumps(article, ensure_ascii=False)
+
+    return {
+        "platform": "dongqiudi",
+        "url": url,
+        "title": title,
+        "raw_html": raw_html,
+        "cleaned_text": cleaned_text,
+        "author": author,
+        "published_at": published_at,
+        "interaction_count": interaction_count,
+        "image_urls": image_urls,
+    }
+
+
+def _parse_time(time_str: str) -> datetime:
+    """Parse DongQiuDi time string to datetime."""
+    if not time_str:
         return datetime.now()
+    try:
+        return datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        try:
+            return datetime.strptime(time_str, "%Y-%m-%d %H:%M")
+        except ValueError:
+            return datetime.now()
