@@ -1,6 +1,7 @@
 import axios from 'axios';
+import type { CardsResponse, CategoriesResponse } from '../types';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -10,28 +11,52 @@ const apiClient = axios.create({
   },
 });
 
-export interface SourceContent {
-  id: number;
-  platform: string;
-  url: string;
-  title: string;
-  cleaned_text: string;
-  author: string | null;
-  published_at: string;
-  interaction_count: number;
-  scraped_at: string;
-}
-
 export const api = {
-  // Get raw content list (Spec 1)
-  getCards: async (limit: number = 20): Promise<SourceContent[]> => {
-    const response = await apiClient.get(`/api/cards/`, { params: { limit } });
+  /**
+   * Get hot topic cards for discovery feed.
+   */
+  getCards: async (
+    category: string = '全部',
+    limit: number = 20,
+    offset: number = 0,
+  ): Promise<CardsResponse> => {
+    const response = await apiClient.get<CardsResponse>('/api/cards', {
+      params: { category, limit, offset },
+    });
     return response.data;
   },
 
-  // Health check
-  healthCheck: async (): Promise<{ status: string; message: string }> => {
-    const response = await apiClient.get('/api/health/');
+  /**
+   * Get new cards since a timestamp (for polling).
+   */
+  getNewCards: async (since: string, category: string = '全部'): Promise<CardsResponse> => {
+    const response = await apiClient.get<CardsResponse>('/api/cards/new', {
+      params: { since, category },
+    });
+    return response.data;
+  },
+
+  /**
+   * Get card detail page.
+   */
+  getCardDetail: async (cardId: number): Promise<any> => {
+    const response = await apiClient.get(`/api/cards/${cardId}/detail`);
+    return response.data;
+  },
+
+  /**
+   * Get channel categories with counts.
+   */
+  getCategories: async (): Promise<CategoriesResponse> => {
+    const response = await apiClient.get<CategoriesResponse>('/api/categories');
+    return response.data;
+  },
+
+  /**
+   * Health check.
+   */
+  healthCheck: async (): Promise<any> => {
+    const response = await apiClient.get('/api/health');
     return response.data;
   },
 };

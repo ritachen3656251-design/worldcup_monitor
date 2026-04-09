@@ -67,7 +67,10 @@ def log_pipeline_stage(stage_name: str):
     Returns:
         Decorator function
     """
+    import functools
+
     def decorator(func):
+        @functools.wraps(func)
         def wrapper(*args, **kwargs):
             logger = get_logger(func.__module__)
             logger.info(f"{stage_name} started", stage=stage_name)

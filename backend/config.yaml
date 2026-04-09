@@ -92,4 +92,4 @@ push:
   polling_interval_seconds: 30
 
 dry_run:
-  enabled: false
+  enabled: true

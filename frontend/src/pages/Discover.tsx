@@ -1,60 +1,165 @@
-import React, { useEffect, useState } from 'react';
-import { api, SourceContent } from '../services/api';
-import RawList from '../components/RawList';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { api } from '../services/api';
+import { pollingService } from '../services/polling';
+import type { HotCard as HotCardType, CategoryInfo } from '../types';
+import CardFeed from '../components/CardFeed';
+import ChannelTabs from '../components/ChannelTabs';
+import Notification from '../components/Notification';
 
 const Discover: React.FC = () => {
-  const [items, setItems] = useState<SourceContent[]>([]);
+  const navigate = useNavigate();
+  const [cards, setCards] = useState<HotCardType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [category, setCategory] = useState('全部');
+  const [categories, setCategories] = useState<CategoryInfo[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [newCardCount, setNewCardCount] = useState(0);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const fetchCards = async () => {
+  const fetchCards = useCallback(async (reset = true) => {
     try {
-      setLoading(true);
-      setError(null);
-      const data = await api.getCards(20);
-      setItems(data);
+      if (reset) {
+        setLoading(true);
+        setError(null);
+      }
+      const offset = reset ? 0 : cards.length;
+      const response = await api.getCards(category, 20, offset);
+      if (response.success) {
+        if (reset) {
+          setCards(response.data.cards);
+        } else {
+          setCards(prev => [...prev, ...response.data.cards]);
+        }
+        setHasMore(response.data.has_more);
+      } else {
+        setError('加载失败，请稍后重试');
+      }
     } catch (err) {
       setError('加载失败，请稍后重试');
       console.error('Failed to fetch cards:', err);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
+  }, [category, cards.length]);
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const response = await api.getCategories();
+      if (response.success) {
+        setCategories(response.data.categories);
+      }
+    } catch (err) {
+      console.error('Failed to fetch categories:', err);
+    }
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    fetchCards(true);
+    fetchCategories();
+  }, [category]);
+
+  // Start polling for new cards
+  useEffect(() => {
+    pollingService.start((newCards) => {
+      setNewCardCount(prev => prev + newCards.length);
+    }, category);
+
+    return () => {
+      pollingService.stop();
+    };
+  }, [category]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          setLoadingMore(true);
+          fetchCards(false);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [hasMore, loadingMore, loading]);
+
+  const handleCardClick = (card: HotCardType) => {
+    navigate(`/detail/${card.id}`);
   };
 
-  useEffect(() => {
-    fetchCards();
-  }, []);
+  const handleCategoryChange = (newCategory: string) => {
+    setCategory(newCategory);
+    setNewCardCount(0);
+    pollingService.setCategory(newCategory);
+  };
+
+  const handleRefreshNew = () => {
+    setNewCardCount(0);
+    fetchCards(true);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* New cards notification */}
+      <Notification
+        count={newCardCount}
+        onRefresh={handleRefreshNew}
+        onDismiss={() => setNewCardCount(0)}
+      />
+
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">
-            ⚽ 2026世界杯热点监控
-          </h1>
-          <p className="text-gray-600 mt-2">
-            实时追踪世界杯最新动态
-          </p>
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-4 py-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                2026世界杯热点监控
+              </h1>
+              <p className="text-sm text-gray-500 mt-1">
+                AI智能聚合 · 实时追踪世界杯最新动态
+              </p>
+            </div>
+            <button
+              onClick={() => fetchCards(true)}
+              disabled={loading}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+            >
+              {loading ? '加载中...' : '刷新'}
+            </button>
+          </div>
+
+          {/* Channel Tabs */}
+          {categories.length > 0 && (
+            <ChannelTabs
+              categories={categories}
+              activeCategory={category}
+              onCategoryChange={handleCategoryChange}
+            />
+          )}
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        {/* Refresh Button */}
-        <div className="mb-6 flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-800">
-            最新内容
-          </h2>
-          <button
-            onClick={fetchCards}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? '加载中...' : '刷新'}
-          </button>
-        </div>
-
+      <main className="max-w-6xl mx-auto px-4 py-6">
         {/* Error Message */}
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
@@ -62,28 +167,34 @@ const Discover: React.FC = () => {
           </div>
         )}
 
-        {/* Loading State */}
-        {loading && items.length === 0 && (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            <p className="mt-4 text-gray-600">加载中...</p>
+        {/* Card Feed */}
+        <CardFeed
+          cards={cards}
+          onCardClick={handleCardClick}
+          loading={loading && cards.length === 0}
+        />
+
+        {/* Load more trigger */}
+        {hasMore && (
+          <div ref={loadMoreRef} className="py-8 text-center">
+            {loadingMore && (
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+            )}
           </div>
         )}
 
-        {/* Content List */}
-        {!loading && items.length === 0 && !error && (
-          <div className="text-center py-12 text-gray-500">
-            暂无内容，请稍后刷新
+        {/* End of list */}
+        {!hasMore && cards.length > 0 && !loading && (
+          <div className="py-8 text-center text-gray-400 text-sm">
+            — 已加载全部内容 —
           </div>
         )}
-
-        {items.length > 0 && <RawList items={items} />}
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-12">
-        <div className="max-w-6xl mx-auto px-4 py-6 text-center text-gray-600 text-sm">
-          World Cup Hot Topics Monitor - Powered by AI
+      <footer className="bg-white border-t border-gray-200 mt-8">
+        <div className="max-w-6xl mx-auto px-4 py-6 text-center text-gray-500 text-sm">
+          World Cup Hot Topics Monitor · Powered by AI
         </div>
       </footer>
     </div>

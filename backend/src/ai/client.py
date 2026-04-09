@@ -13,6 +13,30 @@ from src.utils.text import truncate_input
 logger = get_logger(__name__)
 
 
+def _log_api_call_to_db():
+    """Log API call to database for persistent tracking."""
+    try:
+        from src.core.database import get_session
+        from src.models.api_call_log import APICallLog
+        config = get_config()
+        session = get_session()
+        today = date.today()
+        log_entry = session.query(APICallLog).filter_by(date=today).first()
+        if log_entry:
+            log_entry.call_count += 1
+        else:
+            log_entry = APICallLog(
+                date=today,
+                call_count=1,
+                limit=config.ai.daily_limit,
+            )
+            session.add(log_entry)
+        session.commit()
+        session.close()
+    except Exception as e:
+        logger.warning("Failed to log API call to DB", error=str(e))
+
+
 class APICallLimiter:
     """Track and enforce daily API call limits."""
 
@@ -50,6 +74,8 @@ class APICallLimiter:
 
         # Increment counter
         self.calls_today += 1
+        # Log to database
+        _log_api_call_to_db()
         return True
 
 

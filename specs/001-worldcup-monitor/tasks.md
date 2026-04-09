@@ -98,7 +98,7 @@
 ### Integration
 
 - [X] T036 [Spec1] Configure APScheduler in backend/src/main.py to run scraping every 30 minutes
-- [ ] T037 [Spec1] Test end-to-end: Run scraper → verify data in SQLite → verify frontend displays list
+- [X] T037 [Spec1] Test end-to-end: Run scraper → verify data in SQLite → verify frontend displays list
 
 **Checkpoint**: Spec 1 complete - can see raw 虎扑 posts in browser
 
@@ -112,28 +112,28 @@
 
 ### Backend - AI Processing
 
-- [ ] T038 [Spec2] Implement backend/src/ai/relevance.py with filter_relevance() function (calls Qwen-Turbo, parses score)
-- [ ] T039 [Spec2] Implement backend/src/ai/generation.py with generate_card() function (calls Qwen-Max, generates title/summary/category)
-- [ ] T040 [Spec2] Implement backend/src/ai/credibility.py with calculate_credibility() function (multi-factor scoring)
-- [ ] T041 [Spec2] Update backend/src/services/pipeline.py to add AI filtering and card generation steps
-- [ ] T042 [Spec2] Implement API call limiter in backend/src/ai/client.py (daily counter, hard limit check)
+- [X] T038 [Spec2] Implement backend/src/ai/relevance.py with filter_relevance() function (calls Qwen-Turbo, parses score)
+- [X] T039 [Spec2] Implement backend/src/ai/generation.py with generate_card() function (calls Qwen-Max, generates title/summary/category)
+- [X] T040 [Spec2] Implement backend/src/ai/credibility.py with calculate_credibility() function (multi-factor scoring)
+- [X] T041 [Spec2] Update backend/src/services/pipeline.py to add AI filtering and card generation steps
+- [X] T042 [Spec2] Implement API call limiter in backend/src/ai/client.py (daily counter, hard limit check)
 
 ### Backend - API Updates
 
-- [ ] T043 [Spec2] Update backend/src/api/cards.py GET /api/cards to return HotCard objects instead of raw content
-- [ ] T044 [Spec2] Add GET /api/categories endpoint in backend/src/api/cards.py
+- [X] T043 [Spec2] Update backend/src/api/cards.py GET /api/cards to return HotCard objects instead of raw content
+- [X] T044 [Spec2] Add GET /api/categories endpoint in backend/src/api/cards.py
 
 ### Frontend - Card Display
 
-- [ ] T045 [P] [Spec2] Create frontend/src/components/HotCard.tsx component (title, summary, sources, credibility badge)
-- [ ] T046 [P] [Spec2] Create frontend/src/components/CardFeed.tsx component (grid layout for cards)
-- [ ] T047 [Spec2] Update frontend/src/pages/Discover.tsx to use CardFeed instead of RawList
-- [ ] T048 [Spec2] Add TailwindCSS styling for cards (responsive design)
+- [X] T045 [P] [Spec2] Create frontend/src/components/HotCard.tsx component (title, summary, sources, credibility badge)
+- [X] T046 [P] [Spec2] Create frontend/src/components/CardFeed.tsx component (grid layout for cards)
+- [X] T047 [Spec2] Update frontend/src/pages/Discover.tsx to use CardFeed instead of RawList
+- [X] T048 [Spec2] Add TailwindCSS styling for cards (responsive design)
 
 ### Integration
 
-- [ ] T049 [Spec2] Test AI pipeline: Scrape → Filter (score ≥7) → Generate cards → Display in feed
-- [ ] T050 [Spec2] Verify API call counter increments and respects daily limit
+- [X] T049 [Spec2] Test AI pipeline: Scrape → Filter (score ≥7) → Generate cards → Display in feed
+- [X] T050 [Spec2] Verify API call counter increments and respects daily limit
 
 **Checkpoint**: Spec 2 complete - discovery feed shows AI-generated cards
 
@@ -147,21 +147,21 @@
 
 ### Backend - Clustering
 
-- [ ] T051 [Spec3] Implement backend/src/ai/clustering.py with compute_embeddings() function (sentence-transformers)
-- [ ] T052 [Spec3] Implement backend/src/ai/clustering.py with cluster_by_similarity() function (cosine similarity > 0.8)
-- [ ] T053 [Spec3] Implement backend/src/ai/clustering.py with refine_with_llm() function (Qwen-Turbo judges same topic)
-- [ ] T054 [Spec3] Update backend/src/services/pipeline.py to add clustering step (create TopicCluster, link SourceContent)
-- [ ] T055 [Spec3] Update backend/src/ai/generation.py generate_card() to accept multiple sources (cluster)
+- [X] T051 [Spec3] Implement backend/src/ai/clustering.py with compute_embeddings() function (sentence-transformers)
+- [X] T052 [Spec3] Implement backend/src/ai/clustering.py with cluster_by_similarity() function (cosine similarity > 0.8)
+- [X] T053 [Spec3] Implement backend/src/ai/clustering.py with refine_with_llm() function (Qwen-Turbo judges same topic)
+- [X] T054 [Spec3] Update backend/src/services/pipeline.py to add clustering step (create TopicCluster, link SourceContent)
+- [X] T055 [Spec3] Update backend/src/ai/generation.py generate_card() to accept multiple sources (cluster)
 
 ### Frontend - Multi-Source Display
 
-- [ ] T056 [Spec3] Update frontend/src/components/HotCard.tsx to display multiple source labels
-- [ ] T057 [Spec3] Add source count badge to cards
+- [X] T056 [Spec3] Update frontend/src/components/HotCard.tsx to display multiple source labels
+- [X] T057 [Spec3] Add source count badge to cards
 
 ### Integration
 
-- [ ] T058 [Spec3] Test clustering: Scrape similar posts → Cluster → Generate single card with multiple sources
-- [ ] T059 [Spec3] Verify single-source topics marked as "待确认" credibility
+- [X] T058 [Spec3] Test clustering: Scrape similar posts → Cluster → Generate single card with multiple sources
+- [X] T059 [Spec3] Verify single-source topics marked as "待确认" credibility
 
 **Checkpoint**: Spec 3 complete - cards aggregate multiple sources
 
@@ -175,24 +175,24 @@
 
 ### Backend - Detail Generation
 
-- [ ] T060 [Spec4] Implement backend/src/ai/generation.py with generate_detail() function (structured JSON: overview, viewpoints, timeline)
-- [ ] T061 [Spec4] Add detail page caching logic in backend/src/services/pipeline.py (1 hour TTL)
-- [ ] T062 [Spec4] Create backend/src/api/details.py with GET /api/cards/{id}/detail endpoint
+- [X] T060 [Spec4] Implement backend/src/ai/generation.py with generate_detail() function (structured JSON: overview, viewpoints, timeline)
+- [X] T061 [Spec4] Add detail page caching logic in backend/src/services/pipeline.py (1 hour TTL)
+- [X] T062 [Spec4] Create backend/src/api/details.py with GET /api/cards/{id}/detail endpoint
 
 ### Frontend - Detail Page
 
-- [ ] T063 [P] [Spec4] Create frontend/src/components/DetailPage.tsx component (overview, viewpoints, timeline sections)
-- [ ] T064 [P] [Spec4] Create frontend/src/components/SourceCard.tsx component (horizontal source list at bottom)
-- [ ] T065 [P] [Spec4] Create frontend/src/components/Citation.tsx component (clickable inline citation tags)
-- [ ] T066 [Spec4] Create frontend/src/pages/Detail.tsx route
-- [ ] T067 [Spec4] Update frontend/src/components/HotCard.tsx to link to detail page on click
-- [ ] T068 [Spec4] Implement citation click handler (scroll to source or show tooltip)
+- [X] T063 [P] [Spec4] Create frontend/src/components/DetailPage.tsx component (overview, viewpoints, timeline sections)
+- [X] T064 [P] [Spec4] Create frontend/src/components/SourceCard.tsx component (horizontal source list at bottom)
+- [X] T065 [P] [Spec4] Create frontend/src/components/Citation.tsx component (clickable inline citation tags)
+- [X] T066 [Spec4] Create frontend/src/pages/Detail.tsx route
+- [X] T067 [Spec4] Update frontend/src/components/HotCard.tsx to link to detail page on click
+- [X] T068 [Spec4] Implement citation click handler (scroll to source or show tooltip)
 
 ### Integration
 
-- [ ] T069 [Spec4] Test detail generation: Click card → Generate detail (if not cached) → Display structured content
-- [ ] T070 [Spec4] Verify all citations link to correct sources
-- [ ] T071 [Spec4] Verify contradictions are explicitly noted in generated content
+- [X] T069 [Spec4] Test detail generation: Click card → Generate detail (if not cached) → Display structured content
+- [X] T070 [Spec4] Verify all citations link to correct sources
+- [X] T071 [Spec4] Verify contradictions are explicitly noted in generated content
 
 **Checkpoint**: Spec 4 complete - full detail pages with source attribution
 
@@ -206,28 +206,28 @@
 
 ### Backend - Additional Scrapers
 
-- [ ] T072 [P] [Spec5] Implement backend/src/scrapers/dongqiudi.py (scrape articles and posts, top 20)
-- [ ] T073 [P] [Spec5] Implement backend/src/scrapers/bilibili.py (search videos/dynamics, top 10)
-- [ ] T074 [P] [Spec5] Implement backend/src/scrapers/bing_fallback.py (Bing Search API integration)
-- [ ] T075 [Spec5] Update backend/src/services/pipeline.py to scrape all sources in parallel
+- [X] T072 [P] [Spec5] Implement backend/src/scrapers/dongqiudi.py (scrape articles and posts, top 20)
+- [X] T073 [P] [Spec5] Implement backend/src/scrapers/bilibili.py (search videos/dynamics, top 10)
+- [X] T074 [P] [Spec5] Implement backend/src/scrapers/bing_fallback.py (Bing Search API integration)
+- [X] T075 [Spec5] Update backend/src/services/pipeline.py to scrape all sources in parallel
 
 ### Backend - Health Monitoring
 
-- [ ] T076 [Spec5] Implement backend/src/services/monitoring.py with probe_source_health() function (HTTP HEAD requests)
-- [ ] T077 [Spec5] Implement backend/src/services/monitoring.py with send_alert_email() function (SMTP)
-- [ ] T078 [Spec5] Implement backend/src/services/monitoring.py with handle_degradation() function (switch to Bing after 5 failures)
-- [ ] T079 [Spec5] Add health monitoring scheduler job in backend/src/main.py (every 5 minutes)
-- [ ] T080 [Spec5] Create backend/src/api/health.py GET /api/sources/health endpoint
+- [X] T076 [Spec5] Implement backend/src/services/monitoring.py with probe_source_health() function (HTTP HEAD requests)
+- [X] T077 [Spec5] Implement backend/src/services/monitoring.py with send_alert_email() function (SMTP)
+- [X] T078 [Spec5] Implement backend/src/services/monitoring.py with handle_degradation() function (switch to Bing after 5 failures)
+- [X] T079 [Spec5] Add health monitoring scheduler job in backend/src/main.py (every 5 minutes)
+- [X] T080 [Spec5] Create backend/src/api/health.py GET /api/sources/health endpoint
 
 ### Frontend - Health Status
 
-- [ ] T081 [Spec5] Create frontend/src/components/SourceStatus.tsx component (optional admin view)
+- [X] T081 [Spec5] Create frontend/src/components/SourceStatus.tsx component (optional admin view)
 
 ### Integration
 
-- [ ] T082 [Spec5] Test multi-source scraping: All 3 sources → Cluster across sources → Richer cards
-- [ ] T083 [Spec5] Test degradation: Simulate 虎扑 failure → Alert sent → Bing fallback activated
-- [ ] T084 [Spec5] Verify Bing-sourced content marked "待确认" and labeled "搜索引擎聚合"
+- [X] T082 [Spec5] Test multi-source scraping: All 3 sources → Cluster across sources → Richer cards
+- [X] T083 [Spec5] Test degradation: Simulate 虎扑 failure → Alert sent → Bing fallback activated
+- [X] T084 [Spec5] Verify Bing-sourced content marked "待确认" and labeled "搜索引擎聚合"
 
 **Checkpoint**: Spec 5 complete - robust multi-source pipeline with automatic fallback
 
@@ -241,37 +241,37 @@
 
 ### Backend - Real-Time Push
 
-- [ ] T085 [Spec6] Implement backend/src/services/notification.py with get_new_cards() function (since timestamp)
-- [ ] T086 [Spec6] Add GET /api/cards/new endpoint in backend/src/api/cards.py
+- [X] T085 [Spec6] Implement backend/src/services/notification.py with get_new_cards() function (since timestamp)
+- [X] T086 [Spec6] Add GET /api/cards/new endpoint in backend/src/api/cards.py
 
 ### Backend - Image Handling
 
-- [ ] T087 [P] [Spec6] Implement backend/src/utils/images.py with proxy_image() function (cache original images)
-- [ ] T088 [P] [Spec6] Implement backend/src/utils/images.py with match_theme_image() function (theme library lookup)
-- [ ] T089 [Spec6] Update backend/src/ai/generation.py generate_card() to select image (original > theme > null)
+- [X] T087 [P] [Spec6] Implement backend/src/utils/images.py with proxy_image() function (cache original images)
+- [X] T088 [P] [Spec6] Implement backend/src/utils/images.py with match_theme_image() function (theme library lookup)
+- [X] T089 [Spec6] Update backend/src/ai/generation.py generate_card() to select image (original > theme > null)
 
 ### Frontend - Polling & Notifications
 
-- [ ] T090 [Spec6] Create frontend/src/services/polling.ts with polling service (30-second interval)
-- [ ] T091 [Spec6] Create frontend/src/components/Notification.tsx component (notification bar at top)
-- [ ] T092 [Spec6] Update frontend/src/pages/Discover.tsx to integrate polling and notifications
+- [X] T090 [Spec6] Create frontend/src/services/polling.ts with polling service (30-second interval)
+- [X] T091 [Spec6] Create frontend/src/components/Notification.tsx component (notification bar at top)
+- [X] T092 [Spec6] Update frontend/src/pages/Discover.tsx to integrate polling and notifications
 
 ### Frontend - Visual Polish
 
-- [ ] T093 [P] [Spec6] Create frontend/src/components/ChannelTabs.tsx component (全部/热门/转会传闻/球队动态/赛程赛制/球迷讨论)
-- [ ] T094 [P] [Spec6] Update frontend/src/components/CardFeed.tsx to support mixed layout (3 large cards + small cards grid)
-- [ ] T095 [P] [Spec6] Add image loading states and error handling in frontend/src/components/HotCard.tsx
-- [ ] T096 [P] [Spec6] Implement responsive design (mobile + desktop) across all components
-- [ ] T097 [Spec6] Add TailwindCSS styling to match Perplexity Discover aesthetic (clean, modern, card shadows)
-- [ ] T098 [Spec6] Implement infinite scroll in frontend/src/pages/Discover.tsx
+- [X] T093 [P] [Spec6] Create frontend/src/components/ChannelTabs.tsx component (全部/热门/转会传闻/球队动态/赛程赛制/球迷讨论)
+- [X] T094 [P] [Spec6] Update frontend/src/components/CardFeed.tsx to support mixed layout (3 large cards + small cards grid)
+- [X] T095 [P] [Spec6] Add image loading states and error handling in frontend/src/components/HotCard.tsx
+- [X] T096 [P] [Spec6] Implement responsive design (mobile + desktop) across all components
+- [X] T097 [Spec6] Add TailwindCSS styling to match Perplexity Discover aesthetic (clean, modern, card shadows)
+- [X] T098 [Spec6] Implement infinite scroll in frontend/src/pages/Discover.tsx
 
 ### Integration
 
-- [ ] T099 [Spec6] Test polling: Generate new card → Frontend polls → Notification appears → Click loads new cards
-- [ ] T100 [Spec6] Test channel filtering: Click "转会传闻" → Only transfer rumor cards displayed
-- [ ] T101 [Spec6] Test image strategy: Cards with images display properly, fallback to theme images or no-image layout
-- [ ] T102 [Spec6] Test responsive design: Verify mobile and desktop layouts
-- [ ] T103 [Spec6] Performance test: Verify 3s page load for 10+ cards (SC-001), 1s detail page load (SC-004)
+- [X] T099 [Spec6] Test polling: Generate new card → Frontend polls → Notification appears → Click loads new cards
+- [X] T100 [Spec6] Test channel filtering: Click "转会传闻" → Only transfer rumor cards displayed
+- [X] T101 [Spec6] Test image strategy: Cards with images display properly, fallback to theme images or no-image layout
+- [X] T102 [Spec6] Test responsive design: Verify mobile and desktop layouts
+- [X] T103 [Spec6] Performance test: Verify 3s page load for 10+ cards (SC-001), 1s detail page load (SC-004)
 
 **Checkpoint**: Spec 6 complete - production-ready MVP with all features
 
@@ -281,16 +281,16 @@
 
 **Purpose**: Final improvements and documentation
 
-- [ ] T104 [P] Add comprehensive error handling across all API endpoints
-- [ ] T105 [P] Add loading states and error messages in frontend
-- [ ] T106 [P] Implement frontend/src/components/ErrorBoundary.tsx
-- [ ] T107 [P] Add backend/data/logs/ directory and configure log rotation
-- [ ] T108 [P] Create deployment documentation in backend/README.md
-- [ ] T109 [P] Add API documentation comments (FastAPI auto-generates /docs)
-- [ ] T110 Run quickstart.md validation (setup from scratch, verify all steps work)
-- [ ] T111 Create demo data for screenshots and presentations
-- [ ] T112 Final code review against constitution checklist
-- [ ] T113 Implement scheduled cleanup job in backend/src/services/cleanup.py (archive content after 72h, delete after 30 days per FR-004)
+- [X] T104 [P] Add comprehensive error handling across all API endpoints
+- [X] T105 [P] Add loading states and error messages in frontend
+- [X] T106 [P] Implement frontend/src/components/ErrorBoundary.tsx
+- [X] T107 [P] Add backend/data/logs/ directory and configure log rotation
+- [X] T108 [P] Create deployment documentation in backend/README.md
+- [X] T109 [P] Add API documentation comments (FastAPI auto-generates /docs)
+- [X] T110 Run quickstart.md validation (setup from scratch, verify all steps work)
+- [X] T111 Create demo data for screenshots and presentations
+- [X] T112 Final code review against constitution checklist
+- [X] T113 Implement scheduled cleanup job in backend/src/services/cleanup.py (archive content after 72h, delete after 30 days per FR-004)
 
 ---
 

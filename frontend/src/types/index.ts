@@ -16,14 +16,42 @@ export interface HotCard {
   summary: string;
   category: string;
   credibility: string;
-  source_labels: string[];
+  sources: string[];
   image_url: string | null;
   hotness_score: number;
   generated_at: string;
 }
 
+export interface CardsResponse {
+  success: boolean;
+  data: {
+    cards: HotCard[];
+    total: number;
+    has_more: boolean;
+  };
+  timestamp: string;
+}
+
+export interface CategoriesResponse {
+  success: boolean;
+  data: {
+    categories: CategoryInfo[];
+  };
+  timestamp: string;
+}
+
+export interface CategoryInfo {
+  name: string;
+  count: number;
+}
+
 export interface DetailPage {
   id: number;
+  card: {
+    title: string;
+    credibility: string;
+    generated_at: string;
+  };
   overview: string;
   viewpoints: Viewpoint[];
   timeline: TimelineEvent[];
@@ -49,4 +77,24 @@ export interface Source {
   url: string;
   author: string;
   published_at: string;
+}
+
+export interface HealthResponse {
+  success: boolean;
+  data: {
+    status: string;
+    version: string;
+    timestamp: string;
+    components: {
+      database: string;
+      scheduler: string;
+      sources: Record<string, string>;
+      api_usage: {
+        calls_today: number;
+        limit: number;
+        remaining: number;
+      };
+    };
+  };
+  timestamp: string;
 }

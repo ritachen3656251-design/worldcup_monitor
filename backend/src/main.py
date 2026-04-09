@@ -7,8 +7,10 @@ from src.core.config import get_config
 from src.core.logging import setup_logging, get_logger
 from src.core.database import init_db
 from src.core.scheduler import get_scheduler, start_scheduler, shutdown_scheduler
-from src.services.pipeline import scrape_and_store
-from src.api import cards, health
+from src.services.pipeline import scrape_and_store, run_full_pipeline
+from src.services.monitoring import probe_source_health
+from src.services.cleanup import run_cleanup
+from src.api import cards, health, details
 
 # Setup logging
 setup_logging()
@@ -28,17 +30,36 @@ async def lifespan(app: FastAPI):
     config = get_config()
     scheduler = get_scheduler()
 
-    # Add scraping job (every 30 minutes)
+    # Add pipeline job (every 30 minutes) - full pipeline includes scraping + AI
     scheduler.add_job(
-        scrape_and_store,
+        run_full_pipeline,
         'interval',
         minutes=config.scraping.interval_minutes,
-        id='scraping_job',
+        id='pipeline_job',
         replace_existing=True,
     )
 
     start_scheduler()
-    logger.info("Scheduler started with scraping job")
+    logger.info("Scheduler started with pipeline and monitoring jobs")
+
+    # Add health monitoring job (every 5 minutes)
+    scheduler.add_job(
+        probe_source_health,
+        'interval',
+        minutes=config.monitoring.probe_interval_minutes,
+        id='health_monitoring_job',
+        replace_existing=True,
+    )
+
+    # Add cleanup job (daily at 2 AM)
+    scheduler.add_job(
+        run_cleanup,
+        'cron',
+        hour=2,
+        minute=0,
+        id='cleanup_job',
+        replace_existing=True,
+    )
 
     yield
 
@@ -67,6 +88,7 @@ app.add_middleware(
 # Include routers
 app.include_router(cards.router)
 app.include_router(health.router)
+app.include_router(details.router)
 
 
 @app.get("/")
