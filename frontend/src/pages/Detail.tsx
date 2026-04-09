@@ -29,10 +29,11 @@ const Detail: React.FC = () => {
         if (response.success) {
           setDetail(response.data);
         } else {
-          setError('加载失败，请稍后重试');
+          setError('内容生成失败，请重试');
         }
-      } catch (err) {
-        setError('加载失败，请稍后重试');
+      } catch (err: any) {
+        const msg = err?.response?.data?.detail || '内容加载失败，请重试';
+        setError(msg);
         console.error('Failed to fetch detail:', err);
       } finally {
         setLoading(false);
@@ -72,15 +73,25 @@ const Detail: React.FC = () => {
         )}
 
         {/* Error */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-            {error}
-            <button
-              onClick={() => navigate('/')}
-              className="ml-4 text-sm underline hover:no-underline"
-            >
-              返回首页
-            </button>
+        {error && !loading && (
+          <div className="text-center py-16">
+            <div className="text-5xl mb-4">😵</div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{error}</h3>
+            <p className="text-gray-500 mb-6">AI正在处理中，请稍后再试</p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => { setError(null); setLoading(true); api.getCardDetail(parseInt(id!)).then(r => { if(r.success) setDetail(r.data); else setError('内容生成失败'); }).catch(() => setError('内容加载失败，请重试')).finally(() => setLoading(false)); }}
+                className="px-5 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+              >
+                重试
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+              >
+                返回首页
+              </button>
+            </div>
           </div>
         )}
 

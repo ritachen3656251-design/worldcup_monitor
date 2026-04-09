@@ -22,26 +22,46 @@ class CardGeneration(BaseModel):
 
 class ViewpointSchema(BaseModel):
     """A viewpoint in detail page."""
-    source: str
-    view: str
-    citation: str
+    source: str = ""
+    view: str = ""
+    citation: str = ""
+
+    def __init__(self, **data):
+        # Map common LLM field name variants
+        if "content" in data and "view" not in data:
+            data["view"] = data.pop("content")
+        if "opinion" in data and "view" not in data:
+            data["view"] = data.pop("opinion")
+        super().__init__(**data)
 
 
 class TimelineEventSchema(BaseModel):
     """A timeline event in detail page."""
-    time: str
-    event: str
-    citation: str
+    time: str = ""
+    event: str = ""
+    citation: str = ""
+
+    def __init__(self, **data):
+        if "date" in data and "time" not in data:
+            data["time"] = data.pop("date")
+        if "description" in data and "event" not in data:
+            data["event"] = data.pop("description")
+        super().__init__(**data)
 
 
 class SourceDetailSchema(BaseModel):
     """A source detail entry."""
-    id: int
-    platform: str
-    title: str
-    url: str
+    id: int = 0
+    platform: str = ""
+    title: str = ""
+    url: str = ""
     author: str = ""
     published_at: str = ""
+
+    def __init__(self, **data):
+        if "number" in data and "id" not in data:
+            data["id"] = data.pop("number")
+        super().__init__(**data)
 
 
 class DetailGeneration(BaseModel):
@@ -233,6 +253,19 @@ def generate_detail(sources: List[Dict[str, Any]]) -> Optional[DetailGeneration]
 
         # Parse response
         result = parse_llm_response(response, DetailGeneration)
+
+        # If parse fails (LLM returned Markdown instead of JSON), retry with stronger instruction
+        if result is None:
+            logger.warning("Detail parse failed, retrying with JSON enforcement")
+            retry_prompt = (
+                "请严格按照JSON格式重新输出上面的内容。不要使用Markdown，不要添加任何解释文字。"
+                "只输出一个JSON对象，格式如下：\n"
+                '{"overview": "...", "viewpoints": [...], "timeline": [...], "sources": [...]}\n'
+                "原始内容：\n" + response[:800]
+            )
+            retry_response = call_qwen_api(retry_prompt, model=model)
+            if retry_response:
+                result = parse_llm_response(retry_response, DetailGeneration)
 
         if result:
             # If AI didn't return sources, use the ones we built

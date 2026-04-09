@@ -187,9 +187,11 @@ def parse_llm_response(response: str, schema: type[BaseModel]) -> Optional[BaseM
     """
     Safely parse LLM JSON response with error handling.
 
-    Constitution compliance:
-    - All JSON parsing wrapped in try-except
-    - Pydantic validation for schema enforcement
+    Handles common LLM output quirks:
+    - Markdown code blocks (```json ... ```)
+    - JSON embedded in Markdown prose
+    - Extra text after valid JSON
+    - Pure Markdown (no JSON at all)
 
     Args:
         response: Raw LLM response string
@@ -199,27 +201,47 @@ def parse_llm_response(response: str, schema: type[BaseModel]) -> Optional[BaseM
         Parsed model instance or None if parsing fails
     """
     try:
-        # Try to extract JSON from response (handle markdown code blocks)
-        response = response.strip()
-        if response.startswith("```json"):
-            response = response[7:]
-        if response.startswith("```"):
-            response = response[3:]
-        if response.endswith("```"):
-            response = response[:-3]
-        response = response.strip()
+        text = response.strip()
 
-        # Parse JSON
-        data = json.loads(response)
+        # Strip markdown code blocks
+        if text.startswith("```json"):
+            text = text[7:]
+        if text.startswith("```"):
+            text = text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+        text = text.strip()
 
-        # Validate with Pydantic
-        return schema(**data)
+        # Strategy 1: Try direct json.loads
+        try:
+            data = json.loads(text)
+            return schema(**data)
+        except json.JSONDecodeError:
+            pass
 
-    except json.JSONDecodeError as e:
+        # Strategy 2: Find first { and use raw_decode to handle trailing data
+        brace_pos = text.find("{")
+        if brace_pos >= 0:
+            try:
+                decoder = json.JSONDecoder()
+                data, _ = decoder.raw_decode(text, brace_pos)
+                return schema(**data)
+            except json.JSONDecodeError:
+                pass
+
+        # Strategy 3: Extract JSON from between first { and last }
+        last_brace = text.rfind("}")
+        if brace_pos >= 0 and last_brace > brace_pos:
+            try:
+                candidate = text[brace_pos:last_brace + 1]
+                data = json.loads(candidate)
+                return schema(**data)
+            except json.JSONDecodeError:
+                pass
+
         logger.error(
-            "LLM JSON parse failed",
-            error=str(e),
-            response_sample=response[:200],
+            "LLM response contains no parseable JSON",
+            response_sample=text[:200],
             schema=schema.__name__,
         )
         return None
