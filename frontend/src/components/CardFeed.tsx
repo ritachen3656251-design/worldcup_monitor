@@ -47,13 +47,13 @@ export const CardFeed: React.FC<CardFeedProps> = ({ cards, onCardClick, loading 
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
       {cards.map((card, index) => (
         <HotCard
           key={card.id}
           card={card}
           onClick={onCardClick}
-          size={index < 3 ? 'large' : 'small'}
+          size={index === 0 ? 'large' : 'small'}
         />
       ))}
     </div>

@@ -53,7 +53,7 @@ export const HotCard: React.FC<HotCardProps> = ({ card, onClick, size = 'small' 
       className={`
         bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200
         cursor-pointer border border-gray-100 overflow-hidden
-        ${isLarge ? 'col-span-2 row-span-2' : ''}
+        ${isLarge ? 'col-span-1 md:col-span-2' : ''}
       `}
     >
       <div className={`p-4 ${isLarge ? 'p-6' : 'p-4'}`}>

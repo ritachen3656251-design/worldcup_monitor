@@ -1,7 +1,9 @@
-"""虎扑 (Hupu) scraper."""
+"""虎扑 (Hupu) scraper - Extracts search results from embedded JSON data."""
+import json
+import re
 from typing import List, Dict, Any
 from datetime import datetime
-from bs4 import BeautifulSoup
+from urllib.parse import quote
 
 from src.scrapers.base import unified_request
 from src.core.config import get_config
@@ -13,11 +15,14 @@ logger = get_logger(__name__)
 
 def scrape_hupu(keyword: str = "2026世界杯", limit: int = 20) -> List[Dict[str, Any]]:
     """
-    Scrape 虎扑 hot posts for a given keyword.
+    Scrape 虎扑 search results for a given keyword.
+
+    Hupu embeds search data as JSON in window.$$data within the HTML.
+    We extract and parse this JSON directly instead of scraping DOM nodes.
 
     Args:
         keyword: Search keyword (default: "2026世界杯")
-        limit: Maximum number of posts to scrape (default: 20)
+        limit: Maximum number of posts to return (default: 20)
 
     Returns:
         List of scraped content dicts
@@ -35,78 +40,25 @@ def scrape_hupu(keyword: str = "2026世界杯", limit: int = 20) -> List[Dict[st
     results = []
 
     try:
-        # Hupu search URL (using their search API or hot posts page)
-        # Note: This is a simplified implementation. Real implementation would need
-        # to handle Hupu's actual URL structure and pagination
-        search_url = f"https://bbs.hupu.com/search?q={keyword}"
-
+        search_url = f"https://bbs.hupu.com/search?q={quote(keyword)}"
         response = unified_request(search_url, platform="hupu")
+        html = response.text
 
-        # Parse HTML
-        soup = BeautifulSoup(response.content, 'lxml')
+        # Extract window.$$data JSON from the page
+        items = _extract_search_data(html)
+        if items is None:
+            logger.warning("Failed to extract search data from Hupu page")
+            return results
 
-        # Find post items (adjust selectors based on actual Hupu HTML structure)
-        # This is a placeholder - actual selectors need to be determined by inspecting Hupu's HTML
-        post_items = soup.find_all('div', class_='post-item', limit=limit)
+        logger.info("Hupu raw items extracted", count=len(items))
 
-        for item in post_items:
+        for item in items[:limit]:
             try:
-                # Extract post data (adjust based on actual HTML structure)
-                title_elem = item.find('a', class_='post-title')
-                if not title_elem:
-                    continue
-
-                title = title_elem.get_text(strip=True)
-                url = title_elem.get('href', '')
-                if url and not url.startswith('http'):
-                    url = f"https://bbs.hupu.com{url}"
-
-                # Extract author
-                author_elem = item.find('span', class_='author')
-                author = author_elem.get_text(strip=True) if author_elem else "未知用户"
-
-                # Extract interaction count (likes + comments)
-                interaction_elem = item.find('span', class_='interaction')
-                interaction_count = 0
-                if interaction_elem:
-                    try:
-                        interaction_count = int(interaction_elem.get_text(strip=True))
-                    except ValueError:
-                        pass
-
-                # Extract publish time
-                time_elem = item.find('span', class_='time')
-                published_at = datetime.now()  # Default to now
-                if time_elem:
-                    time_str = time_elem.get_text(strip=True)
-                    # Parse time string (e.g., "2小时前", "2026-04-08 10:00")
-                    # This is simplified - real implementation needs proper time parsing
-                    published_at = _parse_hupu_time(time_str)
-
-                # Extract images
-                image_urls = []
-                img_elems = item.find_all('img', class_='post-image')
-                for img in img_elems:
-                    img_url = img.get('src', '')
-                    if img_url:
-                        image_urls.append(img_url)
-
-                # Get full post content by visiting the post URL
-                raw_html = str(item)
-
-                results.append({
-                    "platform": "hupu",
-                    "url": url,
-                    "title": title,
-                    "raw_html": raw_html,
-                    "author": author,
-                    "published_at": published_at,
-                    "interaction_count": interaction_count,
-                    "image_urls": image_urls,
-                })
-
+                parsed = _parse_item(item)
+                if parsed:
+                    results.append(parsed)
             except Exception as e:
-                logger.warning("Failed to parse Hupu post item", error=str(e))
+                logger.warning("Failed to parse Hupu item", error=str(e))
                 continue
 
         logger.info("Hupu scraping completed", keyword=keyword, results_count=len(results))
@@ -117,43 +69,104 @@ def scrape_hupu(keyword: str = "2026世界杯", limit: int = 20) -> List[Dict[st
     return results
 
 
-def _parse_hupu_time(time_str: str) -> datetime:
+def _extract_search_data(html: str) -> list | None:
     """
-    Parse Hupu time string to datetime.
-
-    Args:
-        time_str: Time string from Hupu (e.g., "2小时前", "2026-04-08 10:00")
+    Extract search result items from window.$$data JSON embedded in HTML.
 
     Returns:
-        Parsed datetime
+        List of raw item dicts, or None if extraction fails
     """
-    from datetime import timedelta
-    import re
+    marker = "window.$$data="
+    start = html.find(marker)
+    if start < 0:
+        return None
 
-    # Handle relative time (e.g., "2小时前", "3天前")
-    if "分钟前" in time_str:
-        match = re.search(r'(\d+)分钟前', time_str)
-        if match:
-            minutes = int(match.group(1))
-            return datetime.now() - timedelta(minutes=minutes)
+    json_start = start + len(marker)
 
-    if "小时前" in time_str:
-        match = re.search(r'(\d+)小时前', time_str)
-        if match:
-            hours = int(match.group(1))
-            return datetime.now() - timedelta(hours=hours)
-
-    if "天前" in time_str:
-        match = re.search(r'(\d+)天前', time_str)
-        if match:
-            days = int(match.group(1))
-            return datetime.now() - timedelta(days=days)
-
-    # Handle absolute time (e.g., "2026-04-08 10:00")
     try:
-        return datetime.strptime(time_str, "%Y-%m-%d %H:%M")
-    except ValueError:
-        pass
+        decoder = json.JSONDecoder()
+        data, _ = decoder.raw_decode(html, json_start)
+    except json.JSONDecodeError as e:
+        logger.error("Failed to parse Hupu JSON", error=str(e))
+        return None
 
-    # Default to now if parsing fails
-    return datetime.now()
+    search_res = data.get("searchRes", {})
+    items = search_res.get("data", [])
+    return items
+
+
+def _parse_item(item: dict) -> dict | None:
+    """
+    Parse a single search result item into our standard format.
+
+    Args:
+        item: Raw item dict from Hupu JSON
+
+    Returns:
+        Standardized content dict, or None if essential fields are missing
+    """
+    # Title: strip HTML highlight tags
+    raw_title = item.get("title", "")
+    if not raw_title:
+        return None
+    title = _strip_html_tags(raw_title)
+
+    # Content: strip HTML highlight tags
+    raw_content = item.get("content", "")
+    content = _strip_html_tags(raw_content) if raw_content else title
+
+    # Post URL
+    post_id = item.get("id", "")
+    url = f"https://bbs.hupu.com/{post_id}.html" if post_id else ""
+
+    # Author
+    author = item.get("username", "未知用户")
+
+    # Publish time (unix timestamp string)
+    addtime = item.get("addtime", "")
+    if addtime:
+        try:
+            published_at = datetime.fromtimestamp(int(addtime))
+        except (ValueError, OSError):
+            published_at = datetime.now()
+    else:
+        published_at = datetime.now()
+
+    # Interaction count: replies + lights
+    replies = _safe_int(item.get("replies", "0"))
+    lights = _safe_int(item.get("lights", "0"))
+    interaction_count = replies + lights
+
+    # Image
+    image_urls = []
+    picture = item.get("picture", "")
+    if picture and isinstance(picture, str) and picture.startswith("http"):
+        image_urls.append(picture)
+
+    # Keep the raw JSON as raw_html for debugging/reprocessing
+    raw_html = json.dumps(item, ensure_ascii=False)
+
+    return {
+        "platform": "hupu",
+        "url": url,
+        "title": title,
+        "raw_html": raw_html,
+        "cleaned_text": content,
+        "author": author,
+        "published_at": published_at,
+        "interaction_count": interaction_count,
+        "image_urls": image_urls,
+    }
+
+
+def _strip_html_tags(text: str) -> str:
+    """Remove HTML tags from text (e.g. <font color='...'> highlight wrappers)."""
+    return re.sub(r"<[^>]+>", "", text).strip()
+
+
+def _safe_int(val) -> int:
+    """Safely convert a value to int, returning 0 on failure."""
+    try:
+        return int(val)
+    except (ValueError, TypeError):
+        return 0

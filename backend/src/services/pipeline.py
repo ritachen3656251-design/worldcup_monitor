@@ -93,8 +93,11 @@ def scrape_and_store() -> List[SourceContent]:
         # Process each scraped item
         for item in all_scraped:
             try:
-                # Clean text
-                cleaned_text = clean_text(item["raw_html"])
+                # Use pre-cleaned text from scraper if available, else clean raw_html
+                if item.get("cleaned_text"):
+                    cleaned_text = item["cleaned_text"]
+                else:
+                    cleaned_text = clean_text(item["raw_html"])
 
                 # Generate fingerprint for deduplication
                 fingerprint = generate_fingerprint(item["title"], cleaned_text)
