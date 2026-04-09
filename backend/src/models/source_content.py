@@ -26,6 +26,7 @@ class SourceContent(Base):
     relevance_score = Column(Integer, nullable=True)
     cluster_id = Column(Integer, ForeignKey("topic_cluster.id"), nullable=True, index=True)
     archived = Column(Boolean, default=False, index=True)
+    duplicate_of = Column(Integer, nullable=True, index=True)  # ID of the primary item this is a semantic duplicate of
 
     def __repr__(self):
         return f"<SourceContent(id={self.id}, platform={self.platform}, title={self.title[:30]})>"

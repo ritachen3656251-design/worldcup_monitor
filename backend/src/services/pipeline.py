@@ -90,7 +90,8 @@ def scrape_and_store() -> List[SourceContent]:
 
         logger.info("Total scraped data", count=len(all_scraped))
 
-        # Process each scraped item
+        # Phase 1: Hash dedup + store all items
+        hash_dupes = 0
         for item in all_scraped:
             try:
                 # Use pre-cleaned text from scraper if available, else clean raw_html
@@ -105,10 +106,12 @@ def scrape_and_store() -> List[SourceContent]:
                 # Check if already exists in DB
                 existing = session.query(SourceContent).filter_by(fingerprint=fingerprint).first()
                 if existing:
+                    hash_dupes += 1
                     continue
 
                 # Check if already added in this batch (same fingerprint)
                 if any(s.fingerprint == fingerprint for s in stored_items):
+                    hash_dupes += 1
                     continue
 
                 # Create SourceContent object
@@ -136,7 +139,17 @@ def scrape_and_store() -> List[SourceContent]:
                 continue
 
         session.commit()
-        logger.info("Scraping pipeline completed", stored_count=len(stored_items))
+
+        # Phase 2: Semantic dedup on newly stored items
+        semantic_dupes = _semantic_dedup(session, stored_items)
+
+        logger.info(
+            "Scraping pipeline completed",
+            total_scraped=len(all_scraped),
+            hash_dupes=hash_dupes,
+            semantic_dupes=semantic_dupes,
+            final_count=len(stored_items) - semantic_dupes,
+        )
 
     except Exception as e:
         logger.error("Scraping pipeline failed", error=str(e), exc_info=True)
@@ -147,6 +160,72 @@ def scrape_and_store() -> List[SourceContent]:
         session.close()
 
     return stored_items
+
+
+def _semantic_dedup(session, items: List[SourceContent], threshold: float = 0.85) -> int:
+    """
+    Semantic deduplication on a batch of SourceContent items.
+
+    Compares titles using embedding cosine similarity. When two items
+    are above the threshold, the one with lower interaction_count is
+    marked as duplicate (duplicate_of = primary.id) but NOT deleted.
+
+    Args:
+        session: DB session
+        items: List of SourceContent objects from this batch
+        threshold: Cosine similarity threshold (default 0.85)
+
+    Returns:
+        Number of items marked as semantic duplicates
+    """
+    if len(items) < 2:
+        return 0
+
+    try:
+        from src.ai.clustering import compute_embeddings, cosine_similarity
+
+        titles = [item.title for item in items]
+        embeddings = compute_embeddings(titles)
+
+        marked = set()
+        dupe_count = 0
+
+        for i in range(len(items)):
+            if items[i].id in marked:
+                continue
+            for j in range(i + 1, len(items)):
+                if items[j].id in marked:
+                    continue
+
+                sim = cosine_similarity(embeddings[i], embeddings[j])
+                if sim >= threshold:
+                    # Keep the one with higher interaction count
+                    if items[i].interaction_count >= items[j].interaction_count:
+                        primary, duplicate = items[i], items[j]
+                    else:
+                        primary, duplicate = items[j], items[i]
+
+                    duplicate.duplicate_of = primary.id
+                    marked.add(duplicate.id)
+                    dupe_count += 1
+
+                    logger.info(
+                        "Semantic duplicate found",
+                        similarity=round(sim, 3),
+                        primary_id=primary.id,
+                        primary_title=primary.title[:40],
+                        duplicate_id=duplicate.id,
+                        duplicate_title=duplicate.title[:40],
+                    )
+
+        if dupe_count > 0:
+            session.commit()
+
+        return dupe_count
+
+    except Exception as e:
+        logger.error("Semantic dedup failed", error=str(e), exc_info=True)
+        return 0
 
 
 @log_pipeline_stage("ai_processing")
@@ -166,10 +245,11 @@ def run_ai_pipeline() -> List[HotCard]:
     generated_cards = []
 
     try:
-        # Step 1: Get unprocessed content (no relevance_score yet)
+        # Get unprocessed content (no relevance_score, not archived, not a semantic duplicate)
         unprocessed = session.query(SourceContent).filter(
             SourceContent.relevance_score.is_(None),
             SourceContent.archived == False,
+            SourceContent.duplicate_of.is_(None),
         ).order_by(SourceContent.scraped_at.desc()).all()
 
         logger.info("AI pipeline starting", unprocessed_count=len(unprocessed))
