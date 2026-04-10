@@ -1,10 +1,12 @@
 scraping:
   interval_minutes: 30
+  limit_per_source: 50  # Number of articles to fetch per source
   keywords:
     # Core World Cup Terms
     - "2026世界杯"
     - "美加墨世界杯"
     - "世界杯预选赛"
+    - "世预赛"
     - "世界杯扩军"
     - "世界杯分组"
     - "世界杯赛程"
@@ -21,6 +23,8 @@ scraping:
     - "世界杯种子队"
     - "世界杯夺冠热门"
     - "世界杯卫冕冠军"
+    - "世界杯球队"
+    - "世界杯大名单"
     # Players and Transfers
     - "世界杯球星"
     - "梅西世界杯"
@@ -74,7 +78,7 @@ ai:
     credibility: "qwen-max"
 
 clustering:
-  embedding_similarity_threshold: 0.8
+  embedding_similarity_threshold: 0.7
   time_window_hours: 24
 
 content:

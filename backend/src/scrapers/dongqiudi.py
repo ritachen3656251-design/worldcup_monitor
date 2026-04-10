@@ -1,8 +1,10 @@
 """懂球帝 scraper - Fetches articles from DongQiuDi app API."""
 import json
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datetime import datetime
 from urllib.parse import quote
+
+from bs4 import BeautifulSoup
 
 from src.scrapers.base import unified_request
 from src.core.config import get_config
@@ -15,7 +17,7 @@ logger = get_logger(__name__)
 WORLDCUP_TAB_ID = 114  # [世界杯] dedicated tab
 
 
-def scrape_dongqiudi(keyword: str = "2026世界杯", limit: int = 20) -> List[Dict[str, Any]]:
+def scrape_dongqiudi(keyword: str = "2026世界杯", limit: int = None) -> List[Dict[str, Any]]:
     """
     Scrape articles from 懂球帝 app API.
 
@@ -25,12 +27,16 @@ def scrape_dongqiudi(keyword: str = "2026世界杯", limit: int = 20) -> List[Di
 
     Args:
         keyword: Search keyword (used for fallback filtering)
-        limit: Maximum number of articles to return
+        limit: Maximum number of articles to return (default: from config)
 
     Returns:
         List of scraped content dicts
     """
     config = get_config()
+
+    # Use config limit if not specified
+    if limit is None:
+        limit = getattr(config.scraping, "limit_per_source", 20)
 
     if config.dry_run.enabled:
         logger.info("[DRY-RUN] Using mock data for 懂球帝")
@@ -87,6 +93,69 @@ def _fetch_tab(tab_id: int) -> List[dict]:
         return []
 
 
+def _fetch_article_content(url: str) -> Optional[str]:
+    """
+    Fetch article full content from DongQiuDi web page.
+
+    Args:
+        url: Article web page URL (mobile or desktop)
+
+    Returns:
+        Article content text, or None if failed
+    """
+    try:
+        # Convert mobile URL to desktop URL for better content extraction
+        # Mobile: https://n.dongqiudi.com/webapp/news.html?articleId=5768662&from=tab_114
+        # Desktop: https://www.dongqiudi.com/article/5768662
+        if "n.dongqiudi.com/webapp/news.html" in url and "articleId=" in url:
+            import re
+            match = re.search(r'articleId=(\d+)', url)
+            if match:
+                article_id = match.group(1)
+                url = f"https://www.dongqiudi.com/article/{article_id}"
+                logger.info("Converted mobile URL to desktop", article_id=article_id)
+
+        logger.info("Fetching article content from web", url=url)
+        response = unified_request(url, platform="dongqiudi")
+        soup = BeautifulSoup(response.text, "lxml")
+
+        # Extract main content from <div class="con">
+        con_elem = soup.find("div", class_="con")
+        if not con_elem:
+            logger.warning("No content div found", url=url)
+            return None
+
+        # Remove hidden elements (like video placeholders)
+        for hidden in con_elem.find_all(style="display:none;"):
+            hidden.decompose()
+
+        # Extract all paragraphs
+        paragraphs = con_elem.find_all("p")
+        content_parts = []
+
+        for p in paragraphs:
+            # Skip image captions
+            if "img-tips" in p.get("class", []):
+                continue
+
+            text = p.get_text(strip=True)
+            # Skip very short paragraphs (likely not content)
+            if text and len(text) > 10:
+                content_parts.append(text)
+
+        if not content_parts:
+            logger.warning("No content paragraphs found", url=url)
+            return None
+
+        content = "\n\n".join(content_parts)
+        logger.info("Article content fetched", url=url, length=len(content))
+        return content
+
+    except Exception as e:
+        logger.error("Failed to fetch article content", url=url, error=str(e))
+        return None
+
+
 def _parse_article(article: dict) -> dict | None:
     """
     Parse a single DongQiuDi article into our standard format.
@@ -119,10 +188,21 @@ def _parse_article(article: dict) -> dict | None:
     except (ValueError, TypeError):
         interaction_count = 0
 
-    # Description / content
-    description = article.get("description", "") or article.get("b_description", "")
-    # If no description, use title as content (DQD API often has empty descriptions)
-    cleaned_text = description if description else title
+    # Fetch full article content from web page
+    cleaned_text = ""
+    if url:
+        web_content = _fetch_article_content(url)
+        if web_content:
+            cleaned_text = web_content
+        else:
+            # Fallback: use description from API
+            description = article.get("description", "") or article.get("b_description", "")
+            cleaned_text = description if description else title
+            logger.warning("Using API description as fallback", article_id=article_id)
+    else:
+        # No URL, use description
+        description = article.get("description", "") or article.get("b_description", "")
+        cleaned_text = description if description else title
 
     # Thumbnail image
     image_urls = []

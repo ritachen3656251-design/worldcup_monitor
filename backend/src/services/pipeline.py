@@ -49,14 +49,15 @@ def scrape_and_store() -> List[SourceContent]:
 
     try:
         keyword = config.scraping.keywords[0] if config.scraping.keywords else "2026世界杯"
-        logger.info("Starting multi-source scraping pipeline", keyword=keyword)
+        limit = getattr(config.scraping, "limit_per_source", 20)
+        logger.info("Starting multi-source scraping pipeline", keyword=keyword, limit=limit)
 
         # Scrape all sources (with error isolation)
         all_scraped = []
 
         # Source 1: Hupu
         try:
-            hupu_data = scrape_hupu(keyword=keyword, limit=20)
+            hupu_data = scrape_hupu(keyword=keyword, limit=limit)
             all_scraped.extend(hupu_data)
             logger.info("Hupu scraped", count=len(hupu_data))
         except Exception as e:
@@ -64,19 +65,20 @@ def scrape_and_store() -> List[SourceContent]:
 
         # Source 2: DongQiuDi
         try:
-            dqd_data = scrape_dongqiudi(keyword=keyword, limit=20)
+            dqd_data = scrape_dongqiudi(keyword=keyword, limit=limit)
             all_scraped.extend(dqd_data)
             logger.info("DongQiuDi scraped", count=len(dqd_data))
         except Exception as e:
             logger.error("DongQiuDi scraping failed", error=str(e))
 
-        # Source 3: Bilibili
-        try:
-            bili_data = scrape_bilibili(keyword=keyword, limit=10)
-            all_scraped.extend(bili_data)
-            logger.info("Bilibili scraped", count=len(bili_data))
-        except Exception as e:
-            logger.error("Bilibili scraping failed", error=str(e))
+        # Source 3: Bilibili (DISABLED - requires JS rendering)
+        # try:
+        #     bili_data = scrape_bilibili(keyword=keyword, limit=limit)
+        #     all_scraped.extend(bili_data)
+        #     logger.info("Bilibili scraped", count=len(bili_data))
+        # except Exception as e:
+        #     logger.error("Bilibili scraping failed", error=str(e))
+        logger.info("Bilibili scraping disabled (requires JS rendering)")
 
         # Check if we need Bing fallback (if all primary sources failed)
         if not all_scraped:
@@ -245,7 +247,7 @@ def run_ai_pipeline() -> List[HotCard]:
     generated_cards = []
 
     try:
-        # Get unprocessed content (no relevance_score, not archived, not a semantic duplicate)
+        # Step 1: Score unprocessed content
         unprocessed = session.query(SourceContent).filter(
             SourceContent.relevance_score.is_(None),
             SourceContent.archived == False,
@@ -254,19 +256,15 @@ def run_ai_pipeline() -> List[HotCard]:
 
         logger.info("AI pipeline starting", unprocessed_count=len(unprocessed))
 
-        if not unprocessed:
-            logger.info("No unprocessed content found")
-            return generated_cards
-
-        # Step 2: Filter by relevance
-        relevant_items = []
+        # Step 2: Filter by relevance (only unscored items)
+        newly_relevant = []
         for item in unprocessed:
             try:
                 score = filter_relevance(item.title, item.cleaned_text)
                 if score is not None:
                     item.relevance_score = score.score
                     if score.score >= 7:
-                        relevant_items.append(item)
+                        newly_relevant.append(item)
                         logger.info(
                             "Content passed relevance filter",
                             title=item.title[:30],
@@ -291,30 +289,29 @@ def run_ai_pipeline() -> List[HotCard]:
                 continue
 
         session.commit()
-        logger.info("Relevance filtering done", relevant_count=len(relevant_items))
+        logger.info("Relevance filtering done", newly_relevant=len(newly_relevant))
 
-        if not relevant_items:
+        # Gather ALL relevant unclustered items (newly scored + previously scored)
+        time_window = datetime.now() - timedelta(hours=config.clustering.time_window_hours)
+        all_relevant_unclustered = session.query(SourceContent).filter(
+            SourceContent.relevance_score >= 7,
+            SourceContent.cluster_id.is_(None),
+            SourceContent.archived == False,
+            SourceContent.duplicate_of.is_(None),
+            SourceContent.scraped_at >= time_window,
+        ).all()
+
+        if not all_relevant_unclustered:
+            logger.info("No relevant unclustered content to process")
             return generated_cards
 
-        # Step 3: Cluster relevant items
-        # Get unclustered relevant items
-        unclustered = [item for item in relevant_items if item.cluster_id is None]
+        logger.info("Relevant unclustered items for clustering", count=len(all_relevant_unclustered))
+
+        # Step 3: Cluster relevant items (with cross-source support)
+        unclustered = all_relevant_unclustered
 
         if unclustered:
-            # Also get existing unclustered items from DB within time window
-            time_window = datetime.now() - timedelta(hours=config.clustering.time_window_hours)
-            existing_unclustered = session.query(SourceContent).filter(
-                SourceContent.relevance_score >= 7,
-                SourceContent.cluster_id.is_(None),
-                SourceContent.archived == False,
-                SourceContent.scraped_at >= time_window,
-            ).all()
-
-            # Combine new + existing unclustered, deduplicating by id
-            all_unclustered_map = {item.id: item for item in existing_unclustered}
-            for item in unclustered:
-                all_unclustered_map[item.id] = item
-            all_unclustered = list(all_unclustered_map.values())
+            all_unclustered = unclustered
 
             # Prepare items for clustering
             cluster_input = [
@@ -322,8 +319,50 @@ def run_ai_pipeline() -> List[HotCard]:
                 for item in all_unclustered
             ]
 
-            # Stage 1: Embedding-based clustering
-            embedding_clusters = cluster_by_similarity(cluster_input)
+            # Stage 0: Try to match new items with existing clusters (cross-source clustering)
+            existing_clusters = session.query(TopicCluster).filter(
+                TopicCluster.last_updated >= time_window
+            ).all()
+
+            assigned_to_existing = {}  # item_index -> cluster_id
+            remaining_indices = list(range(len(cluster_input)))
+
+            if existing_clusters:
+                logger.info("Checking new items against existing clusters", existing_count=len(existing_clusters))
+
+                for idx, item in enumerate(cluster_input):
+                    # Compute embedding for this item
+                    item_embedding = compute_single_embedding(f"{item['title']} {item['cleaned_text'][:200]}")
+
+                    best_cluster = None
+                    best_similarity = 0.0
+
+                    for cluster in existing_clusters:
+                        if cluster.embedding_vector:
+                            try:
+                                from src.ai.clustering import deserialize_embedding, cosine_similarity
+                                cluster_embedding = deserialize_embedding(cluster.embedding_vector)
+                                sim = cosine_similarity(item_embedding, cluster_embedding)
+
+                                if sim >= config.clustering.embedding_similarity_threshold and sim > best_similarity:
+                                    best_similarity = sim
+                                    best_cluster = cluster
+                            except Exception as e:
+                                logger.warning("Failed to compare with cluster", cluster_id=cluster.id, error=str(e))
+
+                    if best_cluster:
+                        assigned_to_existing[idx] = best_cluster.id
+                        remaining_indices.remove(idx)
+                        logger.info(
+                            "Item matched to existing cluster",
+                            item_title=item['title'][:40],
+                            cluster_id=best_cluster.id,
+                            similarity=round(best_similarity, 3),
+                        )
+
+            # Stage 1: Embedding-based clustering for remaining items
+            remaining_items = [cluster_input[i] for i in remaining_indices]
+            embedding_clusters = cluster_by_similarity(remaining_items) if remaining_items else []
 
             # Stage 2: LLM refinement for multi-item clusters
             refined_clusters = []
@@ -336,8 +375,8 @@ def run_ai_pipeline() -> List[HotCard]:
                 verified = [cluster_indices[0]]  # First item always in cluster
                 for idx in cluster_indices[1:]:
                     judgment = refine_with_llm(
-                        cluster_input[cluster_indices[0]],
-                        cluster_input[idx],
+                        remaining_items[cluster_indices[0]],
+                        remaining_items[idx],
                     )
                     if judgment and judgment.same_topic:
                         verified.append(idx)
@@ -349,13 +388,33 @@ def run_ai_pipeline() -> List[HotCard]:
             logger.info(
                 "Clustering complete",
                 input_count=len(all_unclustered),
-                clusters=len(refined_clusters),
+                assigned_to_existing=len(assigned_to_existing),
+                new_clusters=len(refined_clusters),
             )
 
-            # Step 4: Create/update TopicClusters and generate cards
+            # Step 4a: Add items to existing clusters
+            for item_idx, cluster_id in assigned_to_existing.items():
+                try:
+                    cluster = session.query(TopicCluster).get(cluster_id)
+                    if cluster:
+                        item = all_unclustered[item_idx]
+                        item.cluster_id = cluster.id
+                        cluster.source_count += 1
+                        cluster.last_updated = datetime.now()
+                        session.commit()
+
+                        # Regenerate card for updated cluster
+                        _regenerate_card_for_cluster(session, cluster, generated_cards)
+                except Exception as e:
+                    logger.error("Failed to add item to existing cluster", error=str(e))
+                    continue
+
+            # Step 4b: Create/update TopicClusters for new clusters and generate cards
             for cluster_indices in refined_clusters:
                 try:
-                    cluster_items = [all_unclustered[i] for i in cluster_indices]
+                    # Map indices back to original all_unclustered
+                    original_indices = [remaining_indices[i] for i in cluster_indices]
+                    cluster_items = [all_unclustered[i] for i in original_indices]
 
                     # Check if any item is already assigned to a cluster
                     existing_cluster_id = None

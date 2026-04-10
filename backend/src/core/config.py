@@ -10,6 +10,7 @@ from pydantic_settings import BaseSettings
 class ScrapingConfig(BaseModel):
     """Scraping configuration."""
     interval_minutes: int
+    limit_per_source: int = 20  # Default to 20 if not specified
     keywords: list[str]
     delays: Dict[str, int]
 

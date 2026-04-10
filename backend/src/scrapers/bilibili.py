@@ -2,6 +2,7 @@
 from typing import List, Dict, Any
 from datetime import datetime
 import re
+from urllib.parse import quote
 
 from src.scrapers.base import unified_request
 from src.core.config import get_config
@@ -33,8 +34,9 @@ def scrape_bilibili(keyword: str = "2026世界杯", limit: int = 10) -> List[Dic
     results = []
 
     try:
-        # Bilibili search API (web endpoint)
-        url = f"https://search.bilibili.com/all?keyword={keyword}&order=totalrank"
+        # Bilibili search API (web endpoint) - URL encode the keyword
+        encoded_keyword = quote(keyword)
+        url = f"https://search.bilibili.com/all?keyword={encoded_keyword}&order=totalrank"
         logger.info("Scraping B站", url=url, keyword=keyword)
 
         response = unified_request(url, platform="bilibili")

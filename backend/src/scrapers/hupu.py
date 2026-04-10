@@ -13,7 +13,7 @@ from src.utils.mock import generate_mock_source_content
 logger = get_logger(__name__)
 
 
-def scrape_hupu(keyword: str = "2026世界杯", limit: int = 20) -> List[Dict[str, Any]]:
+def scrape_hupu(keyword: str = "2026世界杯", limit: int = None) -> List[Dict[str, Any]]:
     """
     Scrape 虎扑 search results for a given keyword.
 
@@ -22,12 +22,16 @@ def scrape_hupu(keyword: str = "2026世界杯", limit: int = 20) -> List[Dict[st
 
     Args:
         keyword: Search keyword (default: "2026世界杯")
-        limit: Maximum number of posts to return (default: 20)
+        limit: Maximum number of posts to return (default: from config)
 
     Returns:
         List of scraped content dicts
     """
     config = get_config()
+
+    # Use config limit if not specified
+    if limit is None:
+        limit = getattr(config.scraping, "limit_per_source", 20)
 
     # Check dry-run mode
     if config.dry_run.enabled:
